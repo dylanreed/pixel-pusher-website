@@ -256,8 +256,70 @@ function setupHoverPause() {
   });
 }
 
+// Notification form handling
+const NOTIFY_API_URL = 'https://nervous-notify-bot.netlify.app/.netlify/functions/subscribe';
+const PRODUCT_SLUG = 'pixel-pusher';
+
+function setupNotifyForm() {
+  const form = document.getElementById('notify-form');
+  const message = document.getElementById('notify-message');
+  if (!form || !message) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const emailInput = form.querySelector('input[name="email"]');
+    const button = form.querySelector('button');
+    const email = emailInput.value.trim();
+
+    if (!email) return;
+
+    // Disable form during submission
+    emailInput.disabled = true;
+    button.disabled = true;
+    button.textContent = 'SENDING...';
+
+    try {
+      const response = await fetch(NOTIFY_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, slug: PRODUCT_SLUG })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Success - hide form, show message
+        form.hidden = true;
+        message.textContent = "YOU'RE ON THE LIST! WE'LL EMAIL YOU WHEN PIXEL PUSHER 3000 LAUNCHES.";
+        message.className = 'notify-message success';
+        message.hidden = false;
+      } else {
+        // Error from server
+        message.textContent = data.error || 'SOMETHING WENT WRONG. TRY AGAIN.';
+        message.className = 'notify-message error';
+        message.hidden = false;
+        // Re-enable form
+        emailInput.disabled = false;
+        button.disabled = false;
+        button.textContent = 'NOTIFY ME';
+      }
+    } catch (err) {
+      // Network error
+      message.textContent = 'CONNECTION ERROR. CHECK YOUR INTERNET AND TRY AGAIN.';
+      message.className = 'notify-message error';
+      message.hidden = false;
+      // Re-enable form
+      emailInput.disabled = false;
+      button.disabled = false;
+      button.textContent = 'NOTIFY ME';
+    }
+  });
+}
+
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   initCarousel();
   setupHoverPause();
+  setupNotifyForm();
 });
